@@ -48,7 +48,14 @@
           </div>
           <div class="transport">
             <button id="play" aria-label="Play replay">Play</button>
-            <input id="seek" type="range" min="0" value="0" step="1" aria-label="Capture time">
+            <div class="scrubber">
+              <input id="seek" type="range" min="0" value="0" step="1" aria-label="Capture time">
+              <div id="failure-markers" class="failure-markers" aria-label="Failure markers"></div>
+            </div>
+          </div>
+          <div id="failure-nav" class="failure-nav" hidden>
+            <button id="previous-error">Previous error</button>
+            <button id="next-error">Next error</button>
           </div>
         </section>
         <section class="panel timeline">

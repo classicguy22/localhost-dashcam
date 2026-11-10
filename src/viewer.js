@@ -15,6 +15,7 @@ let time = 0;
 let filter = 'all';
 let entries = [];
 let firstFailure;
+let failures = [];
 let loadRevision = 0;
 const isFailure = row => row.kind === 'network' || row.kind === 'error';
 
@@ -90,6 +91,8 @@ function setTime(value, notifyPlayer = true) {
   time = value;
   seek.value = time - current.start;
   el('time').textContent = offset(time - current.start) + ' / ' + offset(current.end - current.start);
+  el('previous-error').disabled = !failures.some(row => row.at < time);
+  el('next-error').disabled = !failures.some(row => row.at > time);
   if (notifyPlayer) send('seek', { time });
 }
 
@@ -110,7 +113,7 @@ function render(data, source) {
   el('share-notice').textContent = '';
   el('welcome').hidden = true;
   el('workspace').hidden = false;
-  const failures = capsule.rows.filter(isFailure);
+  failures = capsule.rows.filter(isFailure).sort((left, right) => left.at - right.at);
   firstFailure = failures[0];
   el('source').textContent = source + ' / ' + ((capsule.end - capsule.start) / 1000).toFixed(1) + ' SEC';
   el('headline').textContent = failures.length === 1 ? '1 failure captured' :
@@ -192,6 +195,39 @@ function render(data, source) {
   selectFilter('all');
   entries.find(entry => entry.row === firstFailure)?.button.setAttribute('aria-current', 'true');
   updateExportSummary();
+  renderMarkers();
+}
+
+function jumpTo(row) {
+  const entry = entries.find(entry => entry.row === row);
+  if (!entry) return;
+  el('search').value = '';
+  selectFilter('failure');
+  entry.button.click();
+  entry.button.focus({ preventScroll: true });
+  entry.item.scrollIntoView({ block: 'nearest' });
+}
+
+function renderMarkers() {
+  const rail = el('failure-markers');
+  rail.replaceChildren();
+  el('failure-nav').hidden = !failures.length;
+  const duration = current.end - current.start;
+  // Nearby failures share a marker. The previous and next buttons visit every timestamp.
+  const shown = new Set();
+  for (const row of failures) {
+    const position = duration ? (row.at - current.start) / duration * 100 : 0;
+    const bucket = Math.floor(position / 3);
+    if (shown.has(bucket)) continue;
+    shown.add(bucket);
+    const button = document.createElement('button');
+    button.style.left = position + '%';
+    button.title = row.message + ' at ' + offset(row.at - current.start);
+    button.setAttribute('aria-label', button.title);
+    button.addEventListener('click', () => jumpTo(row));
+    rail.append(button);
+  }
+  rail.hidden = shown.size === 0;
 }
 
 el('filters').addEventListener('click', event => {
@@ -199,13 +235,9 @@ el('filters').addEventListener('click', event => {
   if (button) selectFilter(button.dataset.filter);
 });
 el('search').addEventListener('input', applyFilter);
-el('jump').addEventListener('click', () => {
-  el('search').value = '';
-  selectFilter('failure');
-  const entry = entries.find(entry => entry.row === firstFailure);
-  entry?.button.click();
-  entry?.button.focus();
-});
+el('jump').addEventListener('click', () => jumpTo(firstFailure));
+el('previous-error').addEventListener('click', () => jumpTo(failures.findLast(row => row.at < time)));
+el('next-error').addEventListener('click', () => jumpTo(failures.find(row => row.at > time)));
 
 seek.addEventListener('input', () => {
   pause();
