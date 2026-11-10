@@ -4,6 +4,10 @@
 
 ![Capsule viewer showing the demo checkout replay next to an HTTP 503 and console error](docs/checkout-capsule.png)
 
+[Download the Chrome extension ZIP](https://github.com/classicguy22/localhost-dashcam/releases/latest/download/localhost-dashcam-0.3.0.zip) · [Watch the 20-second demo](https://github.com/classicguy22/localhost-dashcam/releases/latest/download/dashcam-demo.mp4) · [Get the offline viewer](https://github.com/classicguy22/localhost-dashcam/releases/latest/download/capsule-viewer.html)
+
+Unzip the extension, open `chrome://extensions`, turn on **Developer mode**, and choose **Load unpacked**. Select the folder containing `manifest.json`. Use **Open capsule viewer → Try sample** to look around.
+
 ## Try the broken checkout
 
 You need Node.js 18+ and Chrome or another Chromium browser that supports Manifest V3 (Chrome 120+).
@@ -48,5 +52,7 @@ To share with someone who doesn't have Dashcam, send them `dist/capsule-viewer.h
 - Captures stay in browser memory until exported. Query strings and fragments are omitted from timeline URLs. Replay is off by default in exports and can include visible text, DOM attributes, and asset URLs. Form values are masked where rrweb supports masking. Mark sensitive DOM sections with `data-dashcam-private` and review a capsule before sharing it.
 
 The extension uses [rrweb](https://github.com/rrweb-io/rrweb) for DOM recording and replay, and [esbuild](https://esbuild.github.io/) for bundling.
+
+To recreate the release assets, run `npm run build` followed by `python scripts/package.py release` with Python 3.
 
 MIT
