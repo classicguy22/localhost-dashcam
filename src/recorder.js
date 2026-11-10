@@ -14,7 +14,7 @@ async function resumeIfArmed() {
   const revision = stateRevision;
   try {
     const { armed } = await updateArm('armed');
-    if (armed && revision === stateRevision) start();
+    if (armed && revision === stateRevision) start(true);
   } catch {
     // A page can outlive the extension that injected its recorder.
     if (revision === stateRevision) stop();
@@ -69,7 +69,7 @@ function onRoute() {
   }
 }
 
-function start() {
+function start(resumed = false) {
   if (session) return;
   session = { started: Date.now(), url: localPath(location.href), rows: [], segments: [], sequence: 0 };
   session.stopReplay = record({
@@ -86,7 +86,9 @@ function start() {
   session.replayTimer = setInterval(() => record.takeFullSnapshot(true), 10_000);
   document.addEventListener('click', onClick, true);
   window.postMessage({ channel, control: 'start' }, location.origin);
-  addRow('navigation', 'Recording started', session.url);
+  const reloaded = performance.getEntriesByType('navigation')[0]?.type === 'reload';
+  const label = resumed ? (reloaded ? 'Page reloaded' : 'Page opened') : 'Recording started';
+  addRow('navigation', label, session.url);
   updateArm('recording').catch(() => {});
 }
 
@@ -101,12 +103,12 @@ function stop() {
   session = undefined;
 }
 
-function saveFailure() {
+function saveFailure(capsule) {
   if (!session?.failureTimer) return;
   clearTimeout(session.failureTimer);
   session.failureTimer = undefined;
   session.lastFailureSave = Date.now();
-  updateArm('failure', snapshot()).catch(() => {});
+  updateArm('failure', capsule ?? snapshot()).catch(() => {});
 }
 
 function snapshot() {
@@ -140,7 +142,11 @@ window.addEventListener('message', event => {
 
 window.addEventListener('pagehide', () => {
   stateRevision++;
-  saveFailure();
+  if (session) {
+    const capsule = snapshot();
+    saveFailure(capsule);
+    updateArm('checkpoint', capsule).catch(() => {});
+  }
   stop();
 });
 window.addEventListener('pageshow', event => {
@@ -165,7 +171,10 @@ async function handle(action) {
       stop();
     }
   }
-  if (action === 'save' && session) return { recording: true, capsule: snapshot() };
+  if (action === 'save' && session) {
+    const { capsule } = await updateArm('capture', snapshot());
+    return { recording: Boolean(session), capsule };
+  }
   return { recording: Boolean(session) };
 }
 

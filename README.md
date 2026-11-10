@@ -29,7 +29,7 @@ Use the failure filter or search to find the events that matter. Uncheck any eve
 
 ## Capture scope
 
-- Recording starts when you arm a top-level tab on `localhost` or `127.0.0.1`. The tab stays armed for that origin until you stop it, close it, or restart Chrome. Reloading starts a fresh buffer, so save any events you need from before the reload first. Same-document route changes stay in the current buffer.
+- Recording starts when you arm a top-level tab on `localhost` or `127.0.0.1`. The tab stays armed for that origin until you stop it, close it, or restart Chrome. Reloads and same-origin page visits appear in the timeline. Dashcam keeps recent page history for up to three armed tabs so you can save the minute around a reload.
 - Add `data-dashcam-label="Place order"` to give a click a readable timeline label.
 - The page recorder holds up to 60 seconds of timeline events, capped at 400 rows. A replay may include a few seconds of lead-in for its starting DOM snapshot. Large or busy pages can get a shorter replay due to the buffer limit.
 - Network events cover failed page `fetch` and XHR calls made through the instrumented functions. They include method, origin, and path. Console capture includes the first argument of `console.error`, uncaught errors, and unhandled rejections.

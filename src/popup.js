@@ -21,7 +21,7 @@ function render(state) {
   el('indicator').textContent = recording ? 'Recording' : supported ? 'Ready to arm' : 'Waiting for localhost';
   el('popup-title').textContent = recording ? 'Rolling capture' : supported ? 'Catch the next bug' : 'Open a local app';
   status.textContent = recording
-    ? 'The last minute stays in memory. This tab re-arms when the same app reloads.'
+    ? 'The last minute stays in memory, including activity before a reload on this app.'
     : supported
       ? 'Arm this tab once to capture clicks, console errors, and failed requests.'
       : 'Open or reload a page on localhost or 127.0.0.1 to start recording.';
