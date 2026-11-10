@@ -40,16 +40,17 @@ async function saveFailure(capsule) {
   await chrome.storage.session.set({ [latestFailureKey]: bounded(capsule) });
 }
 
-async function handle({ action, capsule }, sender) {
+async function handle({ action, capsule, bodies }, sender) {
   const tabId = sender.tab.id;
   const key = armKey(tabId);
   const origin = supportedOrigin(sender.url);
 
-  if (action === 'arm') await chrome.storage.session.set({ [key]: origin });
+  if (action === 'arm') await chrome.storage.session.set({ [key]: { origin, bodies: bodies === true } });
   if (action === 'disarm') await clearTab(tabId);
 
   const stored = await chrome.storage.session.get(key);
-  const armed = stored[key] === origin;
+  const settings = stored[key];
+  const armed = settings?.origin === origin || settings === origin;
   if (armed && ['failure', 'checkpoint', 'capture'].includes(action) &&
       supportedOrigin(capsule?.page) === origin) {
     const checkpoints = await getCheckpoints();
@@ -67,7 +68,7 @@ async function handle({ action, capsule }, sender) {
   if (action === 'disarm' || (action === 'recording' && armed)) {
     await chrome.action.setBadgeText({ tabId, text: armed ? 'REC' : '' });
   }
-  return { armed };
+  return { armed, bodies: armed && settings?.bodies === true };
 }
 
 chrome.action.setBadgeBackgroundColor({ color: '#bf394f' }).catch(console.error);

@@ -4,8 +4,8 @@ import { channel, localPath, windowMs, replayBudget } from './protocol.js';
 let session;
 let stateRevision = 0;
 
-async function updateArm(action, capsule) {
-  const result = await chrome.runtime.sendMessage({ channel, action, capsule });
+async function updateArm(action, capsule, bodies) {
+  const result = await chrome.runtime.sendMessage({ channel, action, capsule, bodies });
   if (result?.error) throw new Error(result.error);
   return result;
 }
@@ -13,18 +13,19 @@ async function updateArm(action, capsule) {
 async function resumeIfArmed() {
   const revision = stateRevision;
   try {
-    const { armed } = await updateArm('armed');
-    if (armed && revision === stateRevision) start(true);
+    const { armed, bodies } = await updateArm('armed');
+    if (armed && revision === stateRevision) start(true, bodies);
   } catch {
     // A page can outlive the extension that injected its recorder.
     if (revision === stateRevision) stop();
   }
 }
 
-function addRow(kind, message, detail = '') {
+function addRow(kind, message, detail = '', network, requestId) {
   if (!session) return;
   const at = Date.now();
-  session.rows.push({ id: ++session.sequence, at, kind, message: message.slice(0, 300), detail: detail.slice(0, 400) });
+  session.rows.push({ id: ++session.sequence, at, kind, message: message.slice(0, 300),
+    detail: detail.slice(0, 400), network, requestId });
   session.rows = session.rows.filter(row => row.at >= at - windowMs).slice(-400);
 }
 
@@ -69,7 +70,7 @@ function onRoute() {
   }
 }
 
-function start(resumed = false) {
+function start(resumed = false, bodies = false) {
   if (session) return;
   session = { started: Date.now(), url: localPath(location.href), rows: [], segments: [], sequence: 0 };
   session.stopReplay = record({
@@ -85,7 +86,8 @@ function start(resumed = false) {
   session.routeTimer = setInterval(onRoute, 250);
   session.replayTimer = setInterval(() => record.takeFullSnapshot(true), 10_000);
   document.addEventListener('click', onClick, true);
-  window.postMessage({ channel, control: 'start' }, location.origin);
+  session.bodies = bodies;
+  window.postMessage({ channel, control: 'start', bodies }, location.origin);
   const reloaded = performance.getEntriesByType('navigation')[0]?.type === 'reload';
   const label = resumed ? (reloaded ? 'Page reloaded' : 'Page opened') : 'Recording started';
   addRow('navigation', label, session.url);
@@ -130,10 +132,21 @@ function snapshot() {
 
 window.addEventListener('message', event => {
   if (!session || event.source !== window || event.origin !== location.origin) return;
-  const { channel: source, kind, message, detail } = event.data || {};
-  if (source !== channel || !['error', 'network'].includes(kind) ||
-      typeof message !== 'string' || typeof detail !== 'string') return;
-  addRow(kind, message, detail);
+  const { channel: source, kind, message, detail, network, requestId, preview } = event.data || {};
+  if (source !== channel) return;
+  if (kind === 'response') {
+    if (!session.bodies || typeof requestId !== 'string' || typeof preview !== 'string') return;
+    const row = session.rows.find(row => row.requestId === requestId && row.network);
+    if (!row) return;
+    row.network.preview = preview.slice(0, 2048);
+  } else {
+    if (!['error', 'network'].includes(kind) || typeof message !== 'string' || typeof detail !== 'string') return;
+    const info = kind === 'network' && Number.isFinite(network?.durationMs) ? {
+      durationMs: Math.max(0, Math.min(network.durationMs, 86_400_000)),
+      status: Number.isInteger(network.status) ? network.status : 0
+    } : undefined;
+    addRow(kind, message, detail, info, typeof requestId === 'string' ? requestId.slice(0, 40) : undefined);
+  }
   if (!session.failureTimer) {
     const sinceLastSave = Date.now() - (session.lastFailureSave ?? 0);
     session.failureTimer = setTimeout(saveFailure, Math.max(200, 3_000 - sinceLastSave));
@@ -153,14 +166,14 @@ window.addEventListener('pageshow', event => {
   if (event.persisted) resumeIfArmed();
 });
 
-async function handle(action) {
+async function handle({ action, bodies }) {
   if (action === 'start' || action === 'stop') {
     const revision = ++stateRevision;
     if (action === 'start') {
-      await updateArm('arm');
+      await updateArm('arm', undefined, bodies === true);
       if (revision !== stateRevision) return { recording: Boolean(session) };
       try {
-        start();
+        start(false, bodies === true);
       } catch (error) {
         stop();
         await updateArm('disarm');
@@ -180,7 +193,7 @@ async function handle(action) {
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id || message?.channel !== channel) return;
-  handle(message.action).then(respond, () => respond({ error: 'Could not update the recorder for this tab.' }));
+  handle(message).then(respond, () => respond({ error: 'Could not update the recorder for this tab.' }));
   return true;
 });
 

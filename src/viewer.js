@@ -18,6 +18,12 @@ let firstFailure;
 let loadRevision = 0;
 const isFailure = row => row.kind === 'network' || row.kind === 'error';
 
+function networkDetails(row, includePreview) {
+  if (!Number.isFinite(row.network?.durationMs) || !Number.isInteger(row.network.status)) return undefined;
+  const { durationMs, status, preview } = row.network;
+  return { durationMs, status, ...(includePreview && typeof preview === 'string' ? { preview } : {}) };
+}
+
 function validate(data) {
   if (data?.format !== 'localhost-dashcam' || data.version !== 1 ||
       typeof data.page !== 'string' || !Number.isSafeInteger(data.start) ||
@@ -117,6 +123,8 @@ function render(data, source) {
   el('no-replay').hidden = hasReplay;
   el('include-replay').checked = false;
   el('include-replay').disabled = !hasReplay;
+  el('include-previews').checked = false;
+  el('preview-option').hidden = !capsule.rows.some(row => typeof row.network?.preview === 'string');
   play.disabled = !hasReplay || capsule.start === capsule.end;
   seek.disabled = !hasReplay || capsule.start === capsule.end;
   seek.max = capsule.end - capsule.start;
@@ -158,7 +166,25 @@ function render(data, source) {
       rows.querySelector('[aria-current]')?.removeAttribute('aria-current');
       button.setAttribute('aria-current', 'true');
     });
-    item.append(checkbox, button);
+    const content = document.createElement('div');
+    content.className = 'event-content';
+    content.append(button);
+    const network = networkDetails(row, true);
+    if (network) {
+      const details = document.createElement('details');
+      const summary = document.createElement('summary');
+      summary.textContent = 'Request details · ' + network.durationMs + ' ms';
+      const status = document.createElement('p');
+      status.textContent = network.status ? 'HTTP status ' + network.status : 'No HTTP response';
+      details.append(summary, status);
+      if (network.preview) {
+        const preview = document.createElement('pre');
+        preview.textContent = network.preview;
+        details.append(preview);
+      }
+      content.append(details);
+    }
+    item.append(checkbox, content);
     rows.append(item);
     entries.push({ item, row, button, searchText: [row.kind, row.message, row.detail].join(' ').toLowerCase() });
   }
@@ -273,7 +299,10 @@ el('export').addEventListener('click', () => {
     page: '',
     start: current.start,
     end: current.end,
-    rows: selectedRows().map(({ id, at, kind, message, detail }) => ({ id, at, kind, message, detail })),
+    rows: selectedRows().map(row => {
+      const { id, at, kind, message, detail } = row;
+      return { id, at, kind, message, detail, network: networkDetails(row, el('include-previews').checked) };
+    }),
     replay: el('include-replay').checked ? current.replay : []
   };
   const url = URL.createObjectURL(new Blob([JSON.stringify(capsule)], { type: 'application/json' }));

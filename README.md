@@ -37,6 +37,7 @@ To share with someone who doesn't have Dashcam, send them `dist/capsule-viewer.h
 - Add `data-dashcam-label="Place order"` to give a click a readable timeline label.
 - The page recorder holds up to 60 seconds of timeline events, capped at 400 rows. A replay may include a few seconds of lead-in for its starting DOM snapshot. Large or busy pages can get a shorter replay due to the buffer limit.
 - Network events cover failed page `fetch` and XHR calls made through the instrumented functions. They include method, origin, and path. Console capture includes the first argument of `console.error`, uncaught errors, and unhandled rejections.
+- Failed requests include elapsed time and HTTP status. Enable **Capture error response previews** before arming to capture a short preview of same-origin text and JSON errors. Previews are separately opt-in on export.
 - Playback reconstructs the page DOM from rrweb events. Remote resources, canvas, and embedded frames can appear differently in the replay.
 - Captures stay in browser memory until exported. Query strings and fragments are omitted from timeline URLs. Replay is off by default in exports and can include visible text, DOM attributes, and asset URLs. Form values are masked where rrweb supports masking. Mark sensitive DOM sections with `data-dashcam-private` and review a capsule before sharing it.
 

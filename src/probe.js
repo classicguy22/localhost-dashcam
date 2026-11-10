@@ -12,17 +12,43 @@ function requestDetails(input, method) {
   return String(method || 'GET').slice(0, 16) + ' ' + localPath(input);
 }
 
-function start() {
+function previewAllowed(url, contentType) {
+  return url.startsWith(location.origin + '/') && /^(text\/|application\/(?:json|problem\+json)\b)/i.test(contentType);
+}
+
+async function readPreview(response) {
+  const reader = response.clone().body?.getReader();
+  if (!reader) return '';
+  const decoder = new TextDecoder();
+  let remaining = 2048;
+  let text = '';
+  try {
+    while (remaining > 0) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      text += decoder.decode(value.subarray(0, remaining), { stream: true });
+      remaining -= value.length;
+    }
+    return text + decoder.decode();
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+}
+
+function start(bodies) {
   let enabled = true;
   const requests = new WeakMap();
   const undo = [];
 
-  function report(kind, message, detail = '') {
-    if (enabled) window.postMessage({ channel, kind, message, detail }, location.origin);
+  function report(kind, message, detail = '', fields) {
+    if (enabled) window.postMessage({ channel, kind, message, detail, ...fields }, location.origin);
   }
 
-  function reportStatus(status, detail) {
-    if (status >= 400) report('network', 'HTTP ' + status, detail);
+  function reportRequest(message, status, detail, started, requestId) {
+    report('network', message, detail, {
+      network: { durationMs: Math.round(performance.now() - started), status },
+      requestId
+    });
   }
 
   function patch(target, key, track) {
@@ -42,6 +68,7 @@ function start() {
   }
 
   patch(window, 'fetch', function (previous, args) {
+    const started = performance.now();
     const result = Reflect.apply(previous, this, args);
     const [input, options] = args;
     let detail;
@@ -52,10 +79,16 @@ function start() {
       return result;
     }
     return result.then(response => {
-      reportStatus(response.status, detail);
+      if (response.status >= 400 && enabled) {
+        const requestId = crypto.randomUUID();
+        reportRequest('HTTP ' + response.status, response.status, detail, started, requestId);
+        if (bodies && previewAllowed(response.url, response.headers.get('content-type') ?? '')) {
+          readPreview(response).then(preview => report('response', '', '', { requestId, preview })).catch(() => {});
+        }
+      }
       return response;
     }, error => {
-      if (error?.name !== 'AbortError') report('network', 'Request failed', detail);
+      if (error?.name !== 'AbortError') reportRequest('Request failed', 0, detail, started);
       throw error;
     });
   });
@@ -70,10 +103,19 @@ function start() {
   patch(XMLHttpRequest.prototype, 'send', function (previous, args) {
     const detail = requests.get(this);
     if (!detail) return Reflect.apply(previous, this, args);
+    const started = performance.now();
     const listeners = {
-      load: () => reportStatus(this.status, detail),
-      error: () => report('network', 'Request failed', detail),
-      timeout: () => report('network', 'Request timed out', detail),
+      load: () => {
+        if (!enabled || this.status < 400) return;
+        const requestId = crypto.randomUUID();
+        reportRequest('HTTP ' + this.status, this.status, detail, started, requestId);
+        if (bodies && ['', 'text'].includes(this.responseType) &&
+            previewAllowed(this.responseURL, this.getResponseHeader('content-type') ?? '')) {
+          report('response', '', '', { requestId, preview: this.responseText.slice(0, 2048) });
+        }
+      },
+      error: () => reportRequest('Request failed', 0, detail, started),
+      timeout: () => reportRequest('Request timed out', 0, detail, started),
       loadend: () => cleanup()
     };
     const cleanup = () => {
@@ -114,7 +156,7 @@ function start() {
 
 window.addEventListener('message', event => {
   if (event.source !== window || event.origin !== location.origin || event.data?.channel !== channel) return;
-  if (event.data.control === 'start' && !stop) stop = start();
+  if (event.data.control === 'start' && !stop) stop = start(event.data.bodies === true);
   if (event.data.control === 'stop' && stop) {
     stop();
     stop = undefined;

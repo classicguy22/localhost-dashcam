@@ -7,9 +7,9 @@ const stop = el('stop');
 const save = el('save');
 const activeTab = chrome.tabs.query({ active: true, currentWindow: true });
 
-async function send(action) {
+async function send(action, fields) {
   const [tab] = await activeTab;
-  const result = await chrome.tabs.sendMessage(tab.id, { channel, action });
+  const result = await chrome.tabs.sendMessage(tab.id, { channel, action, ...fields });
   if (result?.error) throw new Error(result.error);
   return result;
 }
@@ -26,6 +26,7 @@ function render(state) {
       ? 'Arm this tab once to capture clicks, console errors, and failed requests.'
       : 'Open or reload a page on localhost or 127.0.0.1 to start recording.';
   start.hidden = !supported || recording;
+  el('body-option').hidden = start.hidden;
   stop.hidden = save.hidden = !recording;
 }
 
@@ -46,7 +47,7 @@ function bind(button, action) {
   });
 }
 
-bind(start, async () => render((await send('start')).recording ? 'recording' : 'ready'));
+bind(start, async () => render((await send('start', { bodies: el('bodies').checked })).recording ? 'recording' : 'ready'));
 bind(stop, async () => {
   await send('stop');
   render('ready');
