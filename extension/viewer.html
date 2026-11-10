@@ -11,6 +11,7 @@
     <header class="masthead">
       <span class="brand"><span class="logo"></span> LOCALHOST DASHCAM</span>
       <div class="toolbar">
+        <button id="library-open" hidden>Capture library</button>
         <button id="sample">Try sample</button>
         <label class="button">Open capsule<input type="file" id="file" accept=".json,application/json"></label>
       </div>
@@ -73,12 +74,22 @@
           <p class="hint">Replay can contain page text, DOM attributes, and asset URLs. Review it before sharing.</p>
         </div>
         <div class="share-actions">
+          <button id="library-save" hidden>Save to library</button>
           <button id="copy">Copy bug report</button>
           <button id="export" class="primary">Download capsule</button>
           <p id="share-notice" class="hint" role="status"></p>
         </div>
       </section>
     </div>
+    <dialog id="library" class="editor">
+      <form method="dialog" class="dialog-head">
+        <h2>Capture library</h2><button>Close</button>
+      </form>
+      <p class="hint">Saved captures stay in this Chrome profile, including their replay.</p>
+      <input type="search" id="library-search" placeholder="Search saved captures" aria-label="Search saved captures">
+      <p id="library-status" role="status"></p>
+      <ul id="library-list" class="library-list"></ul>
+    </dialog>
   </main>
   <script src="viewer.js"></script>
 </body>

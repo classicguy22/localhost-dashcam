@@ -1,5 +1,6 @@
 import { channel, latestFailureKey, supportedOrigin, windowMs } from './protocol.js';
 import { stitch } from './stitch.js';
+import { manageLibrary } from './library-store.js';
 
 const armKey = tabId => 'armed-' + tabId;
 const checkpointKey = 'recent-pages';
@@ -72,6 +73,12 @@ async function handle({ action, capsule }, sender) {
 chrome.action.setBadgeBackgroundColor({ color: '#bf394f' }).catch(console.error);
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
+  if (message?.channel === channel && sender.id === chrome.runtime.id &&
+      sender.url?.startsWith(chrome.runtime.getURL('viewer.html')) &&
+      ['library-list', 'library-save', 'library-rename', 'library-delete'].includes(message.action)) {
+    enqueue(() => manageLibrary(message)).then(respond, () => respond({ error: 'Could not update the capture library.' }));
+    return true;
+  }
   if (message?.channel !== channel || sender.id !== chrome.runtime.id ||
       !Number.isInteger(sender.tab?.id) || sender.frameId !== 0 || !supportedOrigin(sender.url) ||
       !['arm', 'disarm', 'armed', 'recording', 'failure', 'checkpoint', 'capture'].includes(message.action)) return;

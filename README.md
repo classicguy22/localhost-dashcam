@@ -21,6 +21,8 @@ npm run demo
 
 To explore without a dev server, choose **Open capsule viewer → Try sample**.
 
+Choose **Save to library** to keep a capture across browser restarts. The extension's **Capture library** lets you open, search, rename, and delete saved captures. The library stores the complete original capsule locally.
+
 While a tab is armed, a failed request or console error also saves a capsule automatically. Open **Open latest failure** from the toolbar to recover it, even after a reload. Dashcam keeps the newest automatic capture in browser memory until Chrome closes or a newer failure replaces it.
 
 ## Share a bug

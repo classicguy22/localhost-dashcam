@@ -1,4 +1,5 @@
 import { latestFailureKey, maxFileBytes } from './protocol.js';
+import { connectLibrary } from './library.js';
 
 const el = id => document.getElementById(id);
 const frame = el('replay');
@@ -285,6 +286,7 @@ el('export').addEventListener('click', () => {
 });
 
 const captureKey = location.hash.slice(1);
+connectLibrary({ capsule: () => current, open: data => render(data, 'SAVED CAPTURE'), notice });
 if (location.protocol === 'chrome-extension:' &&
     (captureKey === latestFailureKey || /^capture-[0-9a-f-]{36}$/.test(captureKey))) {
   const revision = ++loadRevision;
