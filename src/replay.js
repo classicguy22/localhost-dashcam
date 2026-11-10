@@ -3,6 +3,7 @@ import { Replayer } from 'rrweb';
 const root = document.querySelector('#player');
 let player;
 let originTime = 0;
+const messageOrigin = window.origin;
 
 function resize() {
   const wrapper = root.querySelector('.replayer-wrapper');
@@ -16,7 +17,7 @@ function resize() {
 
 window.addEventListener('resize', resize);
 window.addEventListener('message', event => {
-  if (event.source !== parent || event.origin !== location.origin) return;
+  if (event.source !== parent || event.origin !== messageOrigin) return;
   const { action, events, time } = event.data || {};
   try {
     if (action === 'load') {
@@ -44,4 +45,4 @@ window.addEventListener('message', event => {
     root.style.color = '#ffbdab';
   }
 });
-parent.postMessage({ action: 'ready' }, location.origin);
+parent.postMessage({ action: 'ready' }, messageOrigin === 'null' ? '*' : messageOrigin);

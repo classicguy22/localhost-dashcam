@@ -2,6 +2,7 @@ import { latestFailureKey, maxFileBytes } from './protocol.js';
 
 const el = id => document.getElementById(id);
 const frame = el('replay');
+const messageOrigin = window.origin;
 const seek = el('seek');
 const play = el('play');
 const excluded = new Set();
@@ -33,11 +34,11 @@ function validate(data) {
 }
 
 function send(action, values) {
-  if (ready) frame.contentWindow.postMessage({ action, ...values }, location.origin);
+  if (ready) frame.contentWindow.postMessage({ action, ...values }, messageOrigin === 'null' ? '*' : messageOrigin);
 }
 
 window.addEventListener('message', event => {
-  if (event.source !== frame.contentWindow || event.origin !== location.origin || event.data?.action !== 'ready') return;
+  if (event.source !== frame.contentWindow || event.origin !== messageOrigin || event.data?.action !== 'ready') return;
   ready = true;
   if (current) send('load', { events: current.replay, time });
 });
@@ -201,8 +202,7 @@ play.addEventListener('click', () => {
   }, 50);
 });
 
-el('file').addEventListener('change', async event => {
-  const file = event.target.files[0];
+async function openFile(file) {
   if (!file) return;
   const revision = ++loadRevision;
   try {
@@ -211,17 +211,34 @@ el('file').addEventListener('change', async event => {
     if (revision === loadRevision) render(data, 'IMPORTED CAPSULE');
   } catch (error) {
     if (revision === loadRevision) notice(error instanceof SyntaxError ? 'The file could not be parsed as JSON.' : error.message);
-  } finally {
-    event.target.value = '';
   }
+}
+
+el('file').addEventListener('change', async event => {
+  await openFile(event.target.files[0]);
+  event.target.value = '';
 });
+window.addEventListener('dragover', event => {
+  if (event.dataTransfer.types.includes('Files')) event.preventDefault();
+});
+window.addEventListener('drop', event => {
+  if (!event.dataTransfer.files.length) return;
+  event.preventDefault();
+  openFile(event.dataTransfer.files[0]);
+});
+
+async function readSample() {
+  const embedded = el('embedded-sample');
+  if (embedded) return JSON.parse(embedded.textContent);
+  const response = await fetch('sample.capsule.json');
+  if (!response.ok) throw new Error('The sample capsule could not be loaded.');
+  return response.json();
+}
 
 async function loadSample() {
   const revision = ++loadRevision;
   try {
-    const response = await fetch('sample.capsule.json');
-    if (!response.ok) throw new Error('The sample capsule could not be loaded.');
-    const data = await response.json();
+    const data = await readSample();
     if (revision === loadRevision) render(data, 'SAMPLE CAPSULE');
   } catch (error) {
     if (revision === loadRevision) notice(error.message);
@@ -268,7 +285,8 @@ el('export').addEventListener('click', () => {
 });
 
 const captureKey = location.hash.slice(1);
-if (captureKey === latestFailureKey || /^capture-[0-9a-f-]{36}$/.test(captureKey)) {
+if (location.protocol === 'chrome-extension:' &&
+    (captureKey === latestFailureKey || /^capture-[0-9a-f-]{36}$/.test(captureKey))) {
   const revision = ++loadRevision;
   chrome.storage.session.get(captureKey).then(async data => {
     const capsule = data[captureKey];

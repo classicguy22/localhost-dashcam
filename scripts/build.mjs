@@ -1,5 +1,6 @@
 import { build } from 'esbuild';
 import { cp, copyFile, mkdir } from 'node:fs/promises';
+import { buildStandaloneViewer } from './standalone.mjs';
 
 await mkdir('dist', { recursive: true });
 await cp('extension', 'dist', { recursive: true });
@@ -11,3 +12,4 @@ await build({
   target: 'chrome120',
   legalComments: 'eof'
 });
+await buildStandaloneViewer();

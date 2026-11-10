@@ -27,6 +27,8 @@ While a tab is armed, a failed request or console error also saves a capsule aut
 
 Use the failure filter or search to find the events that matter. Uncheck any event you want to leave out of both sharing formats. **Copy bug report** copies a Markdown timeline for an issue. **Download capsule** saves a JSON file another developer can open in Dashcam. Page replay is optional and starts unchecked.
 
+To share with someone who doesn't have Dashcam, send them `dist/capsule-viewer.html` from the build along with the capsule. They can open the HTML in Chrome and drop the capsule onto it. The standalone viewer includes the sample and runs offline.
+
 ## Capture scope
 
 - Recording starts when you arm a top-level tab on `localhost` or `127.0.0.1`. The tab stays armed for that origin until you stop it, close it, or restart Chrome. Reloads and same-origin page visits appear in the timeline. Dashcam keeps recent page history for up to three armed tabs so you can save the minute around a reload.
