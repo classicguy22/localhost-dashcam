@@ -115,8 +115,11 @@ input[type=range], input[type=checkbox] { accent-color: var(--mint); }
   background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
 .editor::backdrop { background: #000a; }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
-.editor input, .editor textarea { width: 100%; padding: 8px; border-radius: 6px; color: var(--text);
+.editor input, .editor textarea, .editor select { width: 100%; padding: 8px; border-radius: 6px; color: var(--text);
   border: 1px solid var(--line); background: var(--bg); }
+.editor-field { display: grid; gap: 4px; margin: 10px 0; }
+#redaction-status { margin-top: 8px; }
+#share-preview { font-family: ui-monospace, monospace; }
 .editor input[type="search"] { margin: 12px 0; }
 .library-list { padding: 0; margin: 0; list-style: none; }
 .library-list li { display: grid; gap: 7px; border-top: 1px solid var(--line); padding: 12px 0; }

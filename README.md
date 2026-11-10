@@ -31,6 +31,8 @@ Use the failure filter or search to find the events that matter. Uncheck any eve
 
 Open **Replay notes** to attach expected and actual behavior to the current replay position. Saved capsules and copied reports include these notes.
 
+Use **Review and redact** to edit a selected event's message, URL or response preview. Switch between the exact Markdown and JSON previews before sharing. Replay can still contain original page content.
+
 To share with someone who doesn't have Dashcam, send them `dist/capsule-viewer.html` from the build along with the capsule. They can open the HTML in Chrome and drop the capsule onto it. The standalone viewer includes the sample and runs offline.
 
 ## Capture scope

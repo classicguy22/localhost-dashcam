@@ -7,6 +7,7 @@ const messageOrigin = window.origin;
 const seek = el('seek');
 const play = el('play');
 const excluded = new Set();
+const redactions = new Map();
 const kinds = new Set(['navigation', 'click', 'error', 'network']);
 let ready = false;
 let current;
@@ -120,6 +121,7 @@ function render(data, source) {
   el('note-form').reset();
   el('note-status').textContent = '';
   excluded.clear();
+  redactions.clear();
   notice();
   el('share-notice').textContent = '';
   el('welcome').hidden = true;
@@ -366,45 +368,107 @@ function inlineMarkdown(text) {
   return text.replace(/\s+/g, ' ').replace(/[\\`*_{}\[\]<>|#&]/g, '\\$&');
 }
 
-el('copy').addEventListener('click', async () => {
-  const lines = selectedRows().map(row => {
+function sharedRows() {
+  return selectedRows().map(row => redactions.get(row.id) ?? row);
+}
+
+function markdownReport() {
+  const lines = sharedRows().map(row => {
     const detail = row.detail ? ' — ' + inlineMarkdown(row.detail) : '';
     return '- ' + offset(row.at - current.start) + ' · ' + row.kind +
       ' · ' + inlineMarkdown(row.message) + detail;
   });
+  const notes = current.notes.map(note =>
+    '- ' + offset(note.at - current.start) + ' · Expected: ' + inlineMarkdown(note.expected) +
+    ' · Actual: ' + inlineMarkdown(note.actual));
+  if (notes.length) lines.push('', '## Replay notes', '', ...notes);
+  return ['# Dashcam bug report', '', ...lines].join('\n');
+}
+
+el('copy').addEventListener('click', async () => {
   try {
-    const notes = current.notes.map(note =>
-      '- ' + offset(note.at - current.start) + ' · Expected: ' + inlineMarkdown(note.expected) +
-      ' · Actual: ' + inlineMarkdown(note.actual));
-    if (notes.length) lines.push('', '## Replay notes', '', ...notes);
-    await navigator.clipboard.writeText(['# Dashcam bug report', '', ...lines].join('\n'));
+    await navigator.clipboard.writeText(markdownReport());
     el('share-notice').textContent = 'Bug report copied.';
   } catch {
     el('share-notice').textContent = 'Clipboard unavailable. Download the capsule instead.';
   }
 });
 
-el('export').addEventListener('click', () => {
-  const capsule = {
+function exportCapsule() {
+  return {
     format: current.format,
     version: current.version,
     page: '',
     start: current.start,
     end: current.end,
     notes: current.notes,
-    rows: selectedRows().map(row => {
+    rows: sharedRows().map(row => {
       const { id, at, kind, message, detail } = row;
       return { id, at, kind, message, detail, network: networkDetails(row, el('include-previews').checked) };
     }),
     replay: el('include-replay').checked ? current.replay : []
   };
-  const url = URL.createObjectURL(new Blob([JSON.stringify(capsule)], { type: 'application/json' }));
+}
+
+el('export').addEventListener('click', () => {
+  const url = URL.createObjectURL(new Blob([JSON.stringify(exportCapsule())], { type: 'application/json' }));
   const link = document.createElement('a');
   link.href = url;
   link.download = 'dashcam-' + new Date(capsule.end).toISOString().replaceAll(':', '-') + '.capsule.json';
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
   el('share-notice').textContent = 'Capsule downloaded.';
+});
+
+function refreshPreview() {
+  el('share-preview').value = el('preview-format').value === 'json'
+    ? JSON.stringify(exportCapsule()) : markdownReport();
+}
+
+function editingRow() {
+  return selectedRows().find(row => row.id === Number(el('redaction-event').value));
+}
+
+function fillRedaction() {
+  const row = editingRow();
+  el('redaction-fields').hidden = !row;
+  if (!row) return;
+  const value = redactions.get(row.id) ?? row;
+  el('redaction-message').value = value.message;
+  el('redaction-detail').value = value.detail;
+  el('redaction-body-field').hidden = typeof value.network?.preview !== 'string';
+  el('redaction-body').value = value.network?.preview ?? '';
+}
+
+el('review').addEventListener('click', () => {
+  const options = el('redaction-event');
+  options.replaceChildren(...selectedRows().map(row =>
+    new Option(offset(row.at - current.start) + ' · ' + row.message, row.id)));
+  options.disabled = !options.length;
+  el('redaction-status').textContent = '';
+  fillRedaction();
+  refreshPreview();
+  el('redaction').showModal();
+});
+el('redaction-event').addEventListener('change', fillRedaction);
+el('preview-format').addEventListener('change', refreshPreview);
+el('apply-redaction').addEventListener('click', () => {
+  const row = editingRow();
+  if (!row) return;
+  const network = networkDetails(row, true);
+  if (typeof network?.preview === 'string') network.preview = el('redaction-body').value;
+  redactions.set(row.id, { ...row, message: el('redaction-message').value,
+    detail: el('redaction-detail').value, network });
+  el('redaction-status').textContent = 'Edits applied to sharing.';
+  refreshPreview();
+});
+el('reset-redaction').addEventListener('click', () => {
+  const row = editingRow();
+  if (!row) return;
+  redactions.delete(row.id);
+  fillRedaction();
+  refreshPreview();
+  el('redaction-status').textContent = 'Original text restored.';
 });
 
 const captureKey = location.hash.slice(1);
