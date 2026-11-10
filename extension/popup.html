@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Localhost Dashcam</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body class="popup">
+  <header>
+    <span class="brand"><span class="logo"></span> LOCALHOST DASHCAM</span>
+    <h1>Catch the break.</h1>
+    <p id="status" role="status">Checking this tab…</p>
+  </header>
+  <div class="stack">
+    <button class="primary" id="start" hidden>Start recording this tab</button>
+    <button class="primary" id="save" hidden>Save last 60 seconds</button>
+    <button id="stop" hidden>Stop and discard buffer</button>
+    <button id="open">Open capsule viewer</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
