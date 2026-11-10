@@ -122,6 +122,13 @@ input[type=range], input[type=checkbox] { accent-color: var(--mint); }
 .library-list li { display: grid; gap: 7px; border-top: 1px solid var(--line); padding: 12px 0; }
 .library-list small { color: var(--muted); overflow-wrap: anywhere; }
 .library-actions { display: flex; gap: 7px; }
+.annotations { margin-top: 16px; padding: 16px; }
+.annotations summary { cursor: pointer; font-weight: 700; }
+.annotations form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr));
+  align-items: end; gap: 10px; margin: 12px 0; }
+.annotations textarea { display: block; width: 100%; padding: 6px; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; font: inherit; }
+.annotations .library-list p { overflow-wrap: anywhere; white-space: pre-wrap; }
 .toolbar { flex-wrap: wrap; }
 @media (max-width: 900px) { .share { flex-wrap: wrap; } .share-actions { justify-content: start; } #share-notice { text-align: left; } }
 @media (max-width: 760px) { .grid, .welcome { grid-template-columns: 1fr; } }

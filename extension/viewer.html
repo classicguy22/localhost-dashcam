@@ -73,6 +73,16 @@
           <p id="empty-rows" class="empty-rows muted" hidden></p>
         </section>
       </div>
+      <details class="panel annotations" id="annotations">
+        <summary>Replay notes</summary>
+        <form id="note-form">
+          <label>Expected behavior <textarea id="note-expected" rows="2" maxlength="500"></textarea></label>
+          <label>Actual behavior <textarea id="note-actual" rows="2" maxlength="500"></textarea></label>
+          <button type="submit" id="add-note">Add note at current time</button>
+        </form>
+        <ol id="note-list" class="library-list"></ol>
+        <p id="note-status" class="hint" role="status"></p>
+      </details>
       <section class="panel share">
         <div>
           <h2>Share this bug</h2>

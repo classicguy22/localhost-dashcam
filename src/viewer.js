@@ -41,6 +41,14 @@ function validate(data) {
   return data;
 }
 
+function readNotes(capsule) {
+  if (!Array.isArray(capsule.notes)) return [];
+  return capsule.notes.slice(0, 30).filter(note => Number.isSafeInteger(note?.at) &&
+    note.at >= capsule.start && note.at <= capsule.end &&
+    typeof note.expected === 'string' && typeof note.actual === 'string')
+    .map(({ at, expected, actual }) => ({ at, expected: expected.slice(0, 500), actual: actual.slice(0, 500) }));
+}
+
 function send(action, values) {
   if (ready) frame.contentWindow.postMessage({ action, ...values }, messageOrigin === 'null' ? '*' : messageOrigin);
 }
@@ -63,7 +71,7 @@ function updateExportSummary() {
   const count = current.rows.length - excluded.size;
   el('export-summary').textContent = count + ' of ' + current.rows.length +
     ' events selected. Review URLs and error messages before sharing.';
-  el('copy').disabled = count === 0;
+  el('copy').disabled = count === 0 && !current.notes.length;
 }
 
 function applyFilter() {
@@ -108,6 +116,9 @@ function render(data, source) {
   const capsule = validate(data);
   pause();
   current = capsule;
+  current.notes = readNotes(capsule);
+  el('note-form').reset();
+  el('note-status').textContent = '';
   excluded.clear();
   notice();
   el('share-notice').textContent = '';
@@ -196,7 +207,52 @@ function render(data, source) {
   entries.find(entry => entry.row === firstFailure)?.button.setAttribute('aria-current', 'true');
   updateExportSummary();
   renderMarkers();
+  renderNotes();
 }
+
+function renderNotes() {
+  const list = el('note-list');
+  list.replaceChildren();
+  for (const note of current.notes) {
+    const item = document.createElement('li');
+    const actions = document.createElement('div');
+    actions.className = 'library-actions';
+    const jump = document.createElement('button');
+    jump.textContent = 'Jump to ' + offset(note.at - current.start);
+    jump.addEventListener('click', () => { pause(); setTime(note.at); });
+    const remove = document.createElement('button');
+    remove.textContent = 'Remove note';
+    remove.addEventListener('click', () => {
+      current.notes = current.notes.filter(entry => entry !== note);
+      el('note-status').textContent = 'Note removed.';
+      renderNotes();
+    });
+    actions.append(jump, remove);
+    item.append(actions);
+    for (const [label, text] of [['Expected', note.expected], ['Actual', note.actual]]) {
+      if (!text) continue;
+      const paragraph = document.createElement('p');
+      paragraph.textContent = label + ': ' + text;
+      item.append(paragraph);
+    }
+    list.append(item);
+  }
+  el('add-note').disabled = current.notes.length >= 30;
+  el('copy').disabled = !current.notes.length && !selectedRows().length;
+}
+
+el('note-form').addEventListener('submit', event => {
+  event.preventDefault();
+  const expected = el('note-expected').value.trim();
+  const actual = el('note-actual').value.trim();
+  if ((!expected && !actual) || current.notes.length >= 30) return;
+  pause();
+  current.notes.push({ at: Math.round(time), expected, actual });
+  current.notes.sort((left, right) => left.at - right.at);
+  event.target.reset();
+  el('note-status').textContent = 'Replay note added.';
+  renderNotes();
+});
 
 function jumpTo(row) {
   const entry = entries.find(entry => entry.row === row);
@@ -317,6 +373,10 @@ el('copy').addEventListener('click', async () => {
       ' · ' + inlineMarkdown(row.message) + detail;
   });
   try {
+    const notes = current.notes.map(note =>
+      '- ' + offset(note.at - current.start) + ' · Expected: ' + inlineMarkdown(note.expected) +
+      ' · Actual: ' + inlineMarkdown(note.actual));
+    if (notes.length) lines.push('', '## Replay notes', '', ...notes);
     await navigator.clipboard.writeText(['# Dashcam bug report', '', ...lines].join('\n'));
     el('share-notice').textContent = 'Bug report copied.';
   } catch {
@@ -331,6 +391,7 @@ el('export').addEventListener('click', () => {
     page: '',
     start: current.start,
     end: current.end,
+    notes: current.notes,
     rows: selectedRows().map(row => {
       const { id, at, kind, message, detail } = row;
       return { id, at, kind, message, detail, network: networkDetails(row, el('include-previews').checked) };
