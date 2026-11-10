@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Capsule Viewer · Localhost Dashcam</title>
+  <link rel="stylesheet" href="ui.css">
+</head>
+<body>
+  <main class="viewer">
+    <header class="masthead">
+      <span class="brand"><span class="logo"></span> LOCALHOST DASHCAM</span>
+      <div class="toolbar">
+        <button id="sample">Try sample</button>
+        <label class="button">Open capsule<input type="file" id="file" accept=".json,application/json"></label>
+      </div>
+    </header>
+    <section class="hero">
+      <p class="eyebrow">CAPSULE VIEWER</p>
+      <h1 id="headline">Inspect a capture.</h1>
+      <p id="summary" class="muted">Open a capsule or try the sample checkout failure.</p>
+      <p id="notice" role="status" hidden></p>
+    </section>
+    <div id="workspace" hidden>
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-head"><h2>Page replay</h2><span id="time" class="mono"></span></div>
+          <div class="viewport">
+            <iframe id="replay" src="replay.html" title="Page replay"></iframe>
+            <p id="no-replay" hidden>No page replay in this capsule.</p>
+          </div>
+          <div class="transport">
+            <button id="play" aria-label="Play replay">Play</button>
+            <input id="seek" type="range" min="0" value="0" step="1" aria-label="Capture time">
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Timeline</h2><span id="count" class="mono"></span></div>
+          <p class="hint">Select an event to jump to it. Uncheck rows to remove them from export.</p>
+          <ol id="rows" class="rows"></ol>
+        </section>
+      </div>
+      <section class="panel share">
+        <div>
+          <h2>Export capsule</h2>
+          <p class="hint">Review URLs and error messages before sharing. Exports omit the page URL field and any unchecked events.</p>
+          <label class="option"><input id="include-replay" type="checkbox"> Include page replay</label>
+          <p class="hint">Replay can contain visible text, DOM attributes, and asset URLs. Only include it when that content is safe to share.</p>
+        </div>
+        <button id="export" class="primary">Download capsule</button>
+      </section>
+    </div>
+  </main>
+  <script src="viewer.js"></script>
+</body>
+</html>
