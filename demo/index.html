@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Camp Supply · Checkout demo</title>
+  <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+  <main>
+    <p class="eyebrow">CAMP SUPPLY / DEMO STORE</p>
+    <h1>Your gear bag.</h1>
+    <p class="intro">Arm Localhost Dashcam, add an item, then try checking out.</p>
+    <div class="item">
+      <div><strong>Trail mug</strong><br><span>Enamel · forest green</span></div>
+      <button id="add" data-dashcam-label="Add one">Add one</button>
+    </div>
+    <p id="quantity">1 item · $18.00</p>
+    <button id="checkout" data-dashcam-label="Place order">Place order</button>
+    <p id="result" role="status"></p>
+  </main>
+  <script src="checkout.js"></script>
+</body>
+</html>

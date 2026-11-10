@@ -1,0 +1,10 @@
+* { box-sizing: border-box; }
+body { margin: 0; padding: 28px; background: #edf2e6; color: #203528; font: 16px/1.5 system-ui, sans-serif; }
+main { max-width: 540px; margin: 18px auto; padding: 34px; border-radius: 18px; background: #fafcf5; border: 1px solid #c5d4c2; }
+.eyebrow { font-size: .72rem; letter-spacing: .14em; font-weight: 700; }
+h1 { margin: .25em 0; font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -.05em; line-height: 1.1; }
+.intro, .item span { color: #536c57; }
+.item { border-block: 1px solid #c5d4c2; padding: 12px 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+button { padding: .55rem .9rem; border: 0; border-radius: 6px; background: #dae8d4; color: inherit; font: inherit; cursor: pointer; }
+#checkout { background: #25563b; color: white; }
+#result { color: #9c3021; font-weight: 700; margin-bottom: 0; }
