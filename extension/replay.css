@@ -1,4 +1,4 @@
-body { margin: 0; overflow: auto; background: #101922; }
-#player { width: 100%; overflow: hidden; }
+body { margin: 0; overflow: auto; background: #0c1518; }
+#player { width: 100%; margin-inline: auto; overflow: hidden; }
 .replayer-wrapper { transform-origin: top left; pointer-events: none; }
 .replayer-wrapper iframe { border: 0; background: white; }

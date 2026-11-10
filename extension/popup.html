@@ -7,17 +7,22 @@
   <link rel="stylesheet" href="ui.css">
 </head>
 <body class="popup">
-  <header>
+  <header class="popup-brand">
     <span class="brand"><span class="logo"></span> LOCALHOST DASHCAM</span>
-    <h1>Catch the break.</h1>
-    <p id="status" role="status">Checking this tab…</p>
+    <span class="mono version">v0.2</span>
   </header>
-  <div class="stack">
-    <button class="primary" id="start" hidden>Start recording this tab</button>
-    <button class="primary" id="save" hidden>Save last 60 seconds</button>
-    <button id="stop" hidden>Stop and discard buffer</button>
-    <button id="open">Open capsule viewer</button>
-  </div>
+  <main>
+    <section id="popup-card" class="popup-card" data-state="checking">
+      <span id="indicator" class="indicator">Checking tab</span>
+      <h1 id="popup-title">Your bug recorder</h1>
+      <p id="status" role="status">Looking for a local web app…</p>
+      <button class="primary" id="start" hidden>Arm this tab</button>
+      <button class="primary" id="save" hidden>Save last 60 seconds</button>
+      <button class="quiet" id="stop" hidden>Stop and discard buffer</button>
+    </section>
+    <button id="open" class="viewer-link">Open capsule viewer <span aria-hidden="true">↗</span></button>
+    <p class="popup-foot">LOCAL ONLY <span aria-hidden="true">/</span> NO ACCOUNT REQUIRED</p>
+  </main>
   <script src="popup.js"></script>
 </body>
 </html>

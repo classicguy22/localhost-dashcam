@@ -1,10 +1,10 @@
 # Localhost Dashcam
 
-**Save the last minute of a broken local web session.** Record a tab, trigger a bug, and open a capsule with page replay, clicks, console errors, and failed requests on one timeline.
+**A dashcam for your dev server.** Arm a localhost tab, reproduce a bug, and save the last minute. Dashcam puts the clicks, failed requests, and console errors beside a replay you can scrub.
 
 ![Capsule viewer showing the demo checkout replay next to an HTTP 503 and console error](docs/checkout-capsule.png)
 
-## Try it
+## Try the broken checkout
 
 You need Node.js 18+ and Chrome or another Chromium browser that supports Manifest V3 (Chrome 120+).
 
@@ -15,15 +15,20 @@ npm run demo
 ```
 
 1. In Chrome, open `chrome://extensions`, enable **Developer mode**, and choose **Load unpacked**. Select this repo's `dist` directory.
-2. Open the [demo checkout](http://127.0.0.1:4173). Open the Dashcam extension and click **Start recording this tab**.
+2. Open the [demo checkout](http://127.0.0.1:4173), open Dashcam, and click **Arm this tab**. The toolbar badge shows **REC**.
 3. Click **Add one**, then **Place order**. The demo intentionally returns HTTP 503.
-4. Open Dashcam again and click **Save last 60 seconds**. Select the failed POST in the timeline, scrub the replay, or download the capsule.
+4. Click **Save last 60 seconds**. Use **Jump to first failure** to find the failed POST, then scrub the replay to see the checkout error.
 
-You can also choose **Open capsule viewer → Try sample** from the extension to explore a bundled recording without running the demo server. To share a capture, uncheck any timeline rows you want to omit and download it. Recipients can load the extension and open the JSON file in its viewer.
+To explore without a dev server, choose **Open capsule viewer → Try sample**.
+
+## Share a bug
+
+Use the failure filter or search to find the events that matter. Uncheck any event you want to leave out of both sharing formats. **Copy bug report** copies a Markdown timeline for an issue. **Download capsule** saves a JSON file another developer can open in Dashcam. Page replay is optional and starts unchecked.
 
 ## Capture scope
 
-- Recording starts on demand and supports top-level pages on `localhost` and `127.0.0.1`. A reload or full navigation ends the recording. Same-document route changes are tracked. Add `data-dashcam-label="Place order"` to give a click a readable timeline label.
+- Recording starts when you arm a top-level tab on `localhost` or `127.0.0.1`. The tab stays armed for that origin until you stop it, close it, or restart Chrome. Reloading starts a fresh buffer, so save any events you need from before the reload first. Same-document route changes stay in the current buffer.
+- Add `data-dashcam-label="Place order"` to give a click a readable timeline label.
 - The page recorder holds up to 60 seconds of timeline events, capped at 400 rows. A replay may include a few seconds of lead-in for its starting DOM snapshot. Large or busy pages can get a shorter replay due to the buffer limit.
 - Network events cover failed page `fetch` and XHR calls made through the instrumented functions. They include method, origin, and path. Console capture includes the first argument of `console.error`, uncaught errors, and unhandled rejections.
 - Playback reconstructs the page DOM from rrweb events. Remote resources, canvas, and embedded frames can appear differently in the replay.

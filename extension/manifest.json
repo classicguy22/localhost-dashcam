@@ -2,12 +2,15 @@
   "manifest_version": 3,
   "name": "Localhost Dashcam",
   "description": "Save the last minute of a broken local web session.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "minimum_chrome_version": "120",
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Localhost Dashcam"
+    "default_title": "Localhost Dashcam",
+    "default_icon": "icon.png"
   },
+  "icons": { "128": "icon.png" },
+  "background": { "service_worker": "background.js" },
   "permissions": [
     "storage"
   ],
@@ -35,7 +38,7 @@
       "js": [
         "recorder.js"
       ],
-      "run_at": "document_idle"
+      "run_at": "document_start"
     }
   ]
 }

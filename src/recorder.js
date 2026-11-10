@@ -2,6 +2,24 @@ import { record, EventType } from 'rrweb';
 import { channel, localPath, windowMs, replayBudget } from './protocol.js';
 
 let session;
+let stateRevision = 0;
+
+async function updateArm(action) {
+  const result = await chrome.runtime.sendMessage({ channel, action });
+  if (result?.error) throw new Error(result.error);
+  return result;
+}
+
+async function resumeIfArmed() {
+  const revision = stateRevision;
+  try {
+    const { armed } = await updateArm('armed');
+    if (armed && revision === stateRevision) start();
+  } catch {
+    // A page can outlive the extension that injected its recorder.
+    if (revision === stateRevision) stop();
+  }
+}
 
 function addRow(kind, message, detail = '') {
   if (!session) return;
@@ -69,6 +87,7 @@ function start() {
   document.addEventListener('click', onClick, true);
   window.postMessage({ channel, control: 'start' }, location.origin);
   addRow('navigation', 'Recording started', session.url);
+  updateArm('recording').catch(() => {});
 }
 
 function stop() {
@@ -105,20 +124,40 @@ window.addEventListener('message', event => {
       typeof message === 'string' && typeof detail === 'string') addRow(kind, message, detail);
 });
 
-window.addEventListener('pagehide', stop);
+window.addEventListener('pagehide', () => {
+  stateRevision++;
+  stop();
+});
+window.addEventListener('pageshow', event => {
+  if (event.persisted) resumeIfArmed();
+});
+
+async function handle(action) {
+  if (action === 'start' || action === 'stop') {
+    const revision = ++stateRevision;
+    if (action === 'start') {
+      await updateArm('arm');
+      if (revision !== stateRevision) return { recording: Boolean(session) };
+      try {
+        start();
+      } catch (error) {
+        stop();
+        await updateArm('disarm');
+        throw error;
+      }
+    } else {
+      await updateArm('disarm');
+      stop();
+    }
+  }
+  if (action === 'save' && session) return { recording: true, capsule: snapshot() };
+  return { recording: Boolean(session) };
+}
 
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (sender.id !== chrome.runtime.id || message?.channel !== channel) return;
-  try {
-    if (message.action === 'start') start();
-    if (message.action === 'stop') stop();
-    if (message.action === 'save' && session) {
-      respond({ recording: true, capsule: snapshot() });
-    } else {
-      respond({ recording: Boolean(session) });
-    }
-  } catch {
-    stop();
-    respond({ error: 'The recorder could not start on this page.' });
-  }
+  handle(message.action).then(respond, () => respond({ error: 'Could not update the recorder for this tab.' }));
+  return true;
 });
+
+resumeIfArmed();

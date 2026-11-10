@@ -10,6 +10,7 @@ function resize() {
   if (!frame?.width || !frame?.height) return;
   const scale = Math.min(innerWidth / Number(frame.width), innerHeight / Number(frame.height), 1);
   wrapper.style.transform = 'scale(' + scale + ')';
+  root.style.width = Math.ceil(Number(frame.width) * scale) + 'px';
   root.style.height = Math.ceil(Number(frame.height) * scale) + 'px';
 }
 

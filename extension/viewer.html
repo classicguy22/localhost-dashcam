@@ -16,10 +16,26 @@
       </div>
     </header>
     <section class="hero">
-      <p class="eyebrow">CAPSULE VIEWER</p>
-      <h1 id="headline">Inspect a capture.</h1>
-      <p id="summary" class="muted">Open a capsule or try the sample checkout failure.</p>
-      <p id="notice" role="status" hidden></p>
+      <div>
+        <p id="source" class="eyebrow">CAPSULE VIEWER</p>
+        <h1 id="headline">Rewind a broken session.</h1>
+        <p id="summary" class="muted">Open a bug capsule to see what happened just before something broke.</p>
+      </div>
+      <button id="jump" hidden>Jump to first failure <span aria-hidden="true">↘</span></button>
+    </section>
+    <p id="notice" role="status" hidden></p>
+    <section id="welcome" class="welcome">
+      <div>
+        <p class="eyebrow">BUNDLED SAMPLE</p>
+        <h2>The checkout that broke.</h2>
+        <p>Follow two clicks, a failed POST, and the console error that explains it.</p>
+        <button id="welcome-sample" class="primary">Explore the sample <span aria-hidden="true">→</span></button>
+      </div>
+      <div class="preview" aria-hidden="true">
+        <p><span>01</span> Add one <span class="mono">+1.0s</span></p>
+        <p><span>02</span> Place order <span class="mono">+2.4s</span></p>
+        <p class="preview-error"><span>!</span> POST /api/checkout <strong>503</strong></p>
+      </div>
     </section>
     <div id="workspace" hidden>
       <div class="grid">
@@ -34,20 +50,33 @@
             <input id="seek" type="range" min="0" value="0" step="1" aria-label="Capture time">
           </div>
         </section>
-        <section class="panel">
+        <section class="panel timeline">
           <div class="panel-head"><h2>Timeline</h2><span id="count" class="mono"></span></div>
-          <p class="hint">Select an event to jump to it. Uncheck rows to remove them from export.</p>
+          <div class="timeline-controls">
+            <div id="filters" class="filters" role="group" aria-label="Filter timeline">
+              <button data-filter="all" aria-pressed="true">All</button>
+              <button data-filter="failure" aria-pressed="false">Failures</button>
+              <button data-filter="activity" aria-pressed="false">Activity</button>
+            </div>
+            <input id="search" type="search" placeholder="Search events" aria-label="Search events">
+          </div>
+          <p class="hint">Select a row to jump to it. Uncheck it to omit it from sharing.</p>
           <ol id="rows" class="rows"></ol>
+          <p id="empty-rows" class="empty-rows muted" hidden></p>
         </section>
       </div>
       <section class="panel share">
         <div>
-          <h2>Export capsule</h2>
-          <p class="hint">Review URLs and error messages before sharing. Exports omit the page URL field and any unchecked events.</p>
-          <label class="option"><input id="include-replay" type="checkbox"> Include page replay</label>
-          <p class="hint">Replay can contain visible text, DOM attributes, and asset URLs. Only include it when that content is safe to share.</p>
+          <h2>Share this bug</h2>
+          <p id="export-summary" class="hint" aria-live="polite"></p>
+          <label class="option"><input id="include-replay" type="checkbox"> Include page replay in capsule</label>
+          <p class="hint">Replay can contain page text, DOM attributes, and asset URLs. Review it before sharing.</p>
         </div>
-        <button id="export" class="primary">Download capsule</button>
+        <div class="share-actions">
+          <button id="copy">Copy bug report</button>
+          <button id="export" class="primary">Download capsule</button>
+          <p id="share-notice" class="hint" role="status"></p>
+        </div>
       </section>
     </div>
   </main>
