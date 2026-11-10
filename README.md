@@ -33,6 +33,8 @@ Open **Replay notes** to attach expected and actual behavior to the current repl
 
 Use **Review and redact** to edit a selected event's message, URL or response preview. Switch between the exact Markdown and JSON previews before sharing. Replay can still contain original page content.
 
+**Download Playwright draft** turns selected events into a skipped test skeleton. Live captures use unique element IDs or `data-testid` attributes when available. Set `DASHCAM_BASE_URL`, fill in missing locators and assertions, and remove the skip after reviewing the draft.
+
 To share with someone who doesn't have Dashcam, send them `dist/capsule-viewer.html` from the build along with the capsule. They can open the HTML in Chrome and drop the capsule onto it. The standalone viewer includes the sample and runs offline.
 
 ## Capture scope

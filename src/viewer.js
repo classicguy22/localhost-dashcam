@@ -1,5 +1,6 @@
 import { latestFailureKey, maxFileBytes } from './protocol.js';
 import { connectLibrary } from './library.js';
+import { playwrightDraft } from './draft.js';
 
 const el = id => document.getElementById(id);
 const frame = el('replay');
@@ -410,19 +411,34 @@ function exportCapsule() {
   };
 }
 
-el('export').addEventListener('click', () => {
-  const url = URL.createObjectURL(new Blob([JSON.stringify(exportCapsule())], { type: 'application/json' }));
+function download(content, name, type) {
+  const url = URL.createObjectURL(new Blob([content], { type }));
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'dashcam-' + new Date(capsule.end).toISOString().replaceAll(':', '-') + '.capsule.json';
+  link.download = name;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+el('export').addEventListener('click', () => {
+  const name = 'dashcam-' + new Date(current.end).toISOString().replaceAll(':', '-') + '.capsule.json';
+  download(JSON.stringify(exportCapsule()), name, 'application/json');
   el('share-notice').textContent = 'Capsule downloaded.';
 });
 
+function draft() {
+  return playwrightDraft(sharedRows().map(row => redactions.has(row.id) ? { ...row, selector: undefined } : row));
+}
+
+el('playwright').addEventListener('click', () => {
+  download(draft(), 'dashcam-repro.spec.js', 'text/javascript');
+  el('share-notice').textContent = 'Playwright draft downloaded.';
+});
+
 function refreshPreview() {
-  el('share-preview').value = el('preview-format').value === 'json'
-    ? JSON.stringify(exportCapsule()) : markdownReport();
+  const format = el('preview-format').value;
+  el('share-preview').value = format === 'json' ? JSON.stringify(exportCapsule()) :
+    format === 'playwright' ? draft() : markdownReport();
 }
 
 function editingRow() {

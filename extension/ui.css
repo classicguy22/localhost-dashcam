@@ -107,7 +107,7 @@ input[type=range], input[type=checkbox] { accent-color: var(--mint); }
 .excluded .event { opacity: .6; }
 .share { margin-top: 16px; padding: 16px; align-items: start; }
 .share button { flex-shrink: 0; }
-.share-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; flex: 0 0 auto; max-width: 100%; }
+.share-actions { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; flex: 0 1 410px; max-width: 100%; }
 #share-notice { flex-basis: 100%; color: var(--mint); text-align: right; }
 #share-notice:empty { display: none; }
 .option { display: inline-flex; align-items: center; gap: 6px; margin-top: .75rem; }

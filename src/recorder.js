@@ -21,11 +21,11 @@ async function resumeIfArmed() {
   }
 }
 
-function addRow(kind, message, detail = '', network, requestId) {
+function addRow(kind, message, detail = '', network, requestId, selector) {
   if (!session) return;
   const at = Date.now();
   session.rows.push({ id: ++session.sequence, at, kind, message: message.slice(0, 300),
-    detail: detail.slice(0, 400), network, requestId });
+    detail: detail.slice(0, 400), network, requestId, selector });
   session.rows = session.rows.filter(row => row.at >= at - windowMs).slice(-400);
 }
 
@@ -59,7 +59,12 @@ function onClick(event) {
   if (!event.isTrusted || !(element instanceof Element) || element.closest('[data-dashcam-private]')) return;
   const target = element.closest('button, a, input, select, textarea, [role="button"]') || element;
   const label = target.getAttribute('data-dashcam-label') || target.localName;
-  addRow('click', 'Clicked ' + label, localPath(location.href));
+  const testId = target.getAttribute('data-testid');
+  const candidate = testId && testId.length <= 80
+    ? '[data-testid="' + CSS.escape(testId) + '"]'
+    : target.id && target.id.length <= 80 ? '#' + CSS.escape(target.id) : '';
+  const selector = candidate && document.querySelectorAll(candidate).length === 1 ? candidate : undefined;
+  addRow('click', 'Clicked ' + label, localPath(location.href), undefined, undefined, selector);
 }
 
 function onRoute() {
