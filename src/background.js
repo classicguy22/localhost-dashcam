@@ -1,8 +1,21 @@
-import { channel, supportedOrigin } from './protocol.js';
+import { channel, latestFailureKey, supportedOrigin } from './protocol.js';
 
 const armKey = tabId => 'armed-' + tabId;
 
-async function handle(action, sender) {
+let failureWrite = Promise.resolve();
+
+function saveFailure(capsule) {
+  // Serialize writes so a capture from an older tab cannot overwrite a newer one.
+  const write = failureWrite.then(async () => {
+    const stored = await chrome.storage.session.get(latestFailureKey);
+    if ((stored[latestFailureKey]?.end ?? -1) > capsule.end) return;
+    await chrome.storage.session.set({ [latestFailureKey]: capsule });
+  });
+  failureWrite = write.catch(() => {});
+  return write;
+}
+
+async function handle({ action, capsule }, sender) {
   const tabId = sender.tab.id;
   const key = armKey(tabId);
   const origin = supportedOrigin(sender.url);
@@ -12,6 +25,9 @@ async function handle(action, sender) {
 
   const stored = await chrome.storage.session.get(key);
   const armed = stored[key] === origin;
+  if (action === 'failure' && armed && supportedOrigin(capsule?.page) === origin) {
+    await saveFailure(capsule);
+  }
   if (action === 'disarm' || (action === 'recording' && armed)) {
     await chrome.action.setBadgeText({ tabId, text: armed ? 'REC' : '' });
   }
@@ -23,8 +39,8 @@ chrome.action.setBadgeBackgroundColor({ color: '#bf394f' }).catch(console.error)
 chrome.runtime.onMessage.addListener((message, sender, respond) => {
   if (message?.channel !== channel || sender.id !== chrome.runtime.id ||
       !Number.isInteger(sender.tab?.id) || sender.frameId !== 0 || !supportedOrigin(sender.url) ||
-      !['arm', 'disarm', 'armed', 'recording'].includes(message.action)) return;
-  handle(message.action, sender).then(respond, () => respond({ error: 'Could not update recording state.' }));
+      !['arm', 'disarm', 'armed', 'recording', 'failure'].includes(message.action)) return;
+  handle(message, sender).then(respond, () => respond({ error: 'Could not update recording state.' }));
   return true;
 });
 

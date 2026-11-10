@@ -21,6 +21,8 @@ npm run demo
 
 To explore without a dev server, choose **Open capsule viewer → Try sample**.
 
+While a tab is armed, a failed request or console error also saves a capsule automatically. Open **Open latest failure** from the toolbar to recover it, even after a reload. Dashcam keeps the newest automatic capture in browser memory until Chrome closes or a newer failure replaces it.
+
 ## Share a bug
 
 Use the failure filter or search to find the events that matter. Uncheck any event you want to leave out of both sharing formats. **Copy bug report** copies a Markdown timeline for an issue. **Download capsule** saves a JSON file another developer can open in Dashcam. Page replay is optional and starts unchecked.

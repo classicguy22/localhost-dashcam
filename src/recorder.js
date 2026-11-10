@@ -4,8 +4,8 @@ import { channel, localPath, windowMs, replayBudget } from './protocol.js';
 let session;
 let stateRevision = 0;
 
-async function updateArm(action) {
-  const result = await chrome.runtime.sendMessage({ channel, action });
+async function updateArm(action, capsule) {
+  const result = await chrome.runtime.sendMessage({ channel, action, capsule });
   if (result?.error) throw new Error(result.error);
   return result;
 }
@@ -92,12 +92,21 @@ function start() {
 
 function stop() {
   if (!session) return;
+  clearTimeout(session.failureTimer);
   session.stopReplay?.();
   clearInterval(session.routeTimer);
   clearInterval(session.replayTimer);
   document.removeEventListener('click', onClick, true);
   window.postMessage({ channel, control: 'stop' }, location.origin);
   session = undefined;
+}
+
+function saveFailure() {
+  if (!session?.failureTimer) return;
+  clearTimeout(session.failureTimer);
+  session.failureTimer = undefined;
+  session.lastFailureSave = Date.now();
+  updateArm('failure', snapshot()).catch(() => {});
 }
 
 function snapshot() {
@@ -120,12 +129,18 @@ function snapshot() {
 window.addEventListener('message', event => {
   if (!session || event.source !== window || event.origin !== location.origin) return;
   const { channel: source, kind, message, detail } = event.data || {};
-  if (source === channel && ['error', 'network'].includes(kind) &&
-      typeof message === 'string' && typeof detail === 'string') addRow(kind, message, detail);
+  if (source !== channel || !['error', 'network'].includes(kind) ||
+      typeof message !== 'string' || typeof detail !== 'string') return;
+  addRow(kind, message, detail);
+  if (!session.failureTimer) {
+    const sinceLastSave = Date.now() - (session.lastFailureSave ?? 0);
+    session.failureTimer = setTimeout(saveFailure, Math.max(200, 3_000 - sinceLastSave));
+  }
 });
 
 window.addEventListener('pagehide', () => {
   stateRevision++;
+  saveFailure();
   stop();
 });
 window.addEventListener('pageshow', event => {

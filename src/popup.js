@@ -1,4 +1,4 @@
-import { channel } from './protocol.js';
+import { channel, latestFailureKey } from './protocol.js';
 
 const el = id => document.getElementById(id);
 const status = el('status');
@@ -67,6 +67,15 @@ bind(save, async () => {
   }
 });
 bind(el('open'), () => chrome.tabs.create({ url: chrome.runtime.getURL('viewer.html') }));
+bind(el('failure'), () => chrome.tabs.create({ url: chrome.runtime.getURL('viewer.html#latest-failure') }));
+
+function showFailureLink(capsule) {
+  el('failure').hidden = !capsule;
+}
+chrome.storage.session.get(latestFailureKey).then(values => showFailureLink(values[latestFailureKey]));
+chrome.storage.session.onChanged.addListener(changes => {
+  if (changes[latestFailureKey]) showFailureLink(changes[latestFailureKey].newValue);
+});
 
 send('status').then(result => render(result.recording ? 'recording' : 'ready')).catch(() => {
   render('unavailable');

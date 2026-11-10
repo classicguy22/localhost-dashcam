@@ -2,6 +2,7 @@ export const channel = 'localhost-dashcam';
 export const windowMs = 60_000;
 export const replayBudget = 1_500_000;
 export const maxFileBytes = 8_000_000;
+export const latestFailureKey = 'latest-failure';
 
 export function supportedOrigin(input) {
   try {

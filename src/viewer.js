@@ -1,4 +1,4 @@
-import { maxFileBytes } from './protocol.js';
+import { latestFailureKey, maxFileBytes } from './protocol.js';
 
 const el = id => document.getElementById(id);
 const frame = el('replay');
@@ -268,13 +268,14 @@ el('export').addEventListener('click', () => {
 });
 
 const captureKey = location.hash.slice(1);
-if (/^capture-[0-9a-f-]{36}$/.test(captureKey)) {
+if (captureKey === latestFailureKey || /^capture-[0-9a-f-]{36}$/.test(captureKey)) {
   const revision = ++loadRevision;
   chrome.storage.session.get(captureKey).then(async data => {
     const capsule = data[captureKey];
     if (capsule) {
-      if (revision === loadRevision) render(capsule, 'LIVE CAPTURE');
-      await chrome.storage.session.remove(captureKey);
+      const automatic = captureKey === latestFailureKey;
+      if (revision === loadRevision) render(capsule, automatic ? 'AUTO-SAVED FAILURE' : 'LIVE CAPTURE');
+      if (!automatic) await chrome.storage.session.remove(captureKey);
     } else {
       if (revision === loadRevision) notice('This capture is unavailable. Save a new one from the extension.');
     }
